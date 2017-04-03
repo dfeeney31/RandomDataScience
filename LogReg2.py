@@ -1,5 +1,7 @@
 
 # coding: utf-8
+#This is from the excellent y hat tutorial on Logistic Regression at http://blog.yhat.com/posts/logistic-regression-python-rodeo.html
+#First time trying python for logitreg
 
 import pandas as pd
 import statsmodels.api as sm
