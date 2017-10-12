@@ -1,44 +1,52 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from keras.utils import np_utils
-from keras.models import Sequential
-from keras.layers import Dense, Activation
-from keras.utils.np_utils import to_categorical
+from sklearn import linear_model
+from sklearn import preprocessing
+from sklearn.model_selection import train_test_split
+from xgboost import XGBClassifier
+import xgboost as xgb
+from sklearn.metrics import accuracy_score
+import os
+from sklearn.utils import resample
+%matplotlib inline
+os.chdir('/Users/danielfeeney/Documents/DataScience/carinsurance')
 
 df = pd.read_csv('train.csv')
+df_majority = df[df.target==0]
+df_minority = df[df.target==1]
+len(df_majority)
+len(df_minority)
 
-X = df.loc[:, (df.columns != 'target') & (df.columns != 'id')]
-y = df['target']
+# Upsample minority class
+df_minority_upsampled = resample(df_minority,
+                                 replace=True,     # sample with replacement
+                                 n_samples=573518,    # to match majority class
+                                 random_state=123) # reproducible results
 
-X = df.loc[:, (df.columns != 'target') & (df.columns != 'id')]
-y = df['target']
-x_train = np.array(X)
-y_train = np.array(y)
-x_train = x_train[0:100000,0:57]
-y_train = y_train[0:100000]
+# Combine majority class with upsampled minority class
+df_upsampled = pd.concat([df_majority, df_minority_upsampled])
 
-#Input dimension and output dimension to build model. Takes trial and error usually.
-in_dim = X.shape[1]
-#Sequential layer. Output of 128 nodes. Activation. Another dense layer. Activation that is sigmoid. Then compile
-# create model
-model = Sequential()
-model.add(Dense(12, input_dim= in_dim, activation='relu'))
-model.add(Dense(1, activation='sigmoid'))
-model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-x_train = np.array(X)
-y_train = np.array(y)
+X = df_upsampled.loc[:, (df_upsampled.columns != 'target') & (df_upsampled.columns != 'id')]
+y = df_upsampled['target']
 
-model.fit(x_train, y_train, batch_size = 50)
+seed = 7
+test_size = 0.33
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=seed)
 
-#Read in testing data
+# fit model no training data
+model = XGBClassifier()
+model.fit(X_train, y_train)
+
 test = pd.read_csv('test.csv')
 X_test = test.loc[:, (test.columns != 'id')]
-x_test = np.array(X_test)
 
-#Make predictions on the testing data
-predicts = model.predict(x_test)
-df1 = pd.DataFrame(predicts, columns = ['target'])
-idout = IDs = test.loc[:, (test.columns == 'id')]
-out = pd.concat([idout,df1], axis = 1)
+preds = model.predict_proba(X_test)
+#Save data into 2 DFs, concatenate
+df1 = pd.DataFrame(preds[:,1], columns = ['target'])
+IDs = test.loc[:, (test.columns == 'id')]
+out = pd.concat([IDs,df1], axis = 1)
+out.head()
+
+out.to_csv('Submission_new.csv', index= False, header = True)
