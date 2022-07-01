@@ -33,14 +33,15 @@ future <- make_future_dataframe(m, periods = 100)
 forecast <- predict(m, future)
 plot(m, forecast)
 
+prophet_plot_components(m, forecast)
 
 # LSTM model --------------------------------------------------------------
 
 # Start with overly simple model on dates rather than each store/location/item
-datalags = 10
+datalags = 20
 train <- pDat[1:800,]
 test <- pDat[801:1000,]
-batch.size = 10
+batch.size = 60
 
 x.train = array(data = lag(cbind(train$y, train$ds), datalags)[-(1:datalags), ], dim = c(nrow(train) - datalags, datalags, 2))
 y.train = array(data = train$y[-(1:datalags)], dim = c(nrow(train)-datalags, 1))
@@ -66,7 +67,7 @@ model %>%
   compile(loss = 'mae', optimizer = 'adam')
 model
 
-for(i in 1:2000){
+for(i in 1:200){
   model %>% fit(x = x.train,
                 y = y.train,
                 batch_size = batch.size,
